@@ -76,6 +76,12 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
             throw new InvalidOperationException("このフォルダーには初期設定がありません。先に初期設定を作成してください。");
         if (operation != Operation.Initialize && CanInitialize) await UpdateConfigurationAsync();
 
+        var manifestPath = Path.Combine(ProjectPath, "src", "manifest.json");
+        if (operation is Operation.Build or Operation.Validate && !File.Exists(manifestPath))
+            throw new InvalidOperationException("サイト取得結果がありません。先に「1 サイトを取得」を実行してください。");
+        if (operation == Operation.Validate && !Directory.Exists(Path.Combine(ProjectPath, "dist")))
+            throw new InvalidOperationException("生成済みHTMLがありません。先に「2 HTMLを生成」を実行してください。");
+
         var node = FindNode();
         var cli = FindRuntimeFile("bin", "wp-static-migrator.js");
         var command = operation switch { Operation.Initialize => "init", Operation.Crawl => "crawl", Operation.Build => "build", Operation.Validate => "validate", _ => "all" };

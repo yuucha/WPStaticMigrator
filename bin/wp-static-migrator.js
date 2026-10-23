@@ -30,6 +30,9 @@ if(command==='init'){
 }
 if(!['crawl','build','validate','all','report','preview'].includes(command)){usage();process.exit(2);}
 if(!fs.existsSync(path.join(dir,'config.json'))){console.error('Missing config.json. Run init first.');process.exit(2);}
+const manifest=path.join(dir,'src','manifest.json');
+if(['build','validate'].includes(command)&&!fs.existsSync(manifest)){console.error('Missing src/manifest.json. Run crawl first.');process.exit(2);}
+if(command==='validate'&&!fs.existsSync(path.join(dir,'dist'))){console.error('Missing generated HTML. Run build first.');process.exit(2);}
 if(command==='preview'){
  const portRaw=option('port')||'8080';
  const port=Number(portRaw);
