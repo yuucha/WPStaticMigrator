@@ -1,5 +1,5 @@
 const fs=require('node:fs');const path=require('node:path');const cheerio=require('cheerio');
-const {ROOT,config,origin,sleep,write,urlOf,isPage,pageKey,pageFile,assetPath,publicUrl,get,allowed}=require('./common');
+const {ROOT,config,origin,sleep,write,decodeBuffer,urlOf,isPage,pageKey,pageFile,assetPath,publicUrl,get,allowed}=require('./common');
 const queue=config.startPaths.map(p=>new URL(p,origin));const seen=new Set();const assets=new Map();const manifest=[];const errors=[];
 const SEL=config.selectors;
 const sharedVariants=[];
@@ -16,7 +16,13 @@ async function crawl() {
  while(queue.length && manifest.length<config.maxPages) {
   const u=queue.shift();if(!isPage(u)||seen.has(pageKey(u)))continue;seen.add(pageKey(u));
   try {const r=await get(u);if(!String(r.headers.get('content-type')).includes('text/html'))continue;
-   const html=await r.text();const $=cheerio.load(html,{decodeEntities:false});
+   const html=decodeBuffer(Buffer.from(await r.arrayBuffer()),r.headers.get('content-type')||'');const $=cheerio.load(html,{decodeEntities:false});
+   // Generated files are always UTF-8. Remove legacy declarations before the
+   // head is persisted so browsers do not reinterpret the converted bytes.
+   $('meta[charset],meta[http-equiv]').filter((_,el)=>{
+    const node=$(el);return node.is('[charset]')||(node.attr('http-equiv')||'').toLowerCase()==='content-type';
+   }).remove();
+   $('head').prepend('<meta charset="utf-8">');
    $('a[href]').each((_,a)=>{const v=$(a).attr('href');const target=urlOf(v,u);if(isPage(target)&&!seen.has(pageKey(target)))queue.push(target);});
    $('a[href]').each((_,a)=>{const v=$(a).attr('href');if(v)$(a).attr('href',publicUrl(v,u));});
    for(const [sel,attr] of [['img[src]','src'],['img[srcset]','srcset'],['source[src]','src'],['source[srcset]','srcset'],['script[src]','src'],['link[href]','href'],['video[poster]','poster'],['video[src]','src'],['audio[src]','src'],['iframe[src]','src'],['input[src]','src']]) {
@@ -45,7 +51,7 @@ async function crawl() {
  while(assets.size) {const [href,u]=assets.entries().next().value;assets.delete(href);if(completed.has(href))continue;completed.add(href);
   try {const r=await get(u);const type=r.headers.get('content-type')||'';let buf=Buffer.from(await r.arrayBuffer());
    if(/text\/css/i.test(type)||/\.css$/i.test(u.pathname)){
-    let css=buf.toString('utf8');css=css.replace(/url\(\s*(['"]?)([^)'"\s]+)\1\s*\)/g,(_,q,v)=>{enqueueAsset(v,u);return `url(${q}${publicUrl(v,u)}${q})`;});
+    let css=decodeBuffer(buf,type,false);css=css.replace(/^\s*@charset\s+["'][^"']+["'];?/i,'@charset "UTF-8";');css=css.replace(/url\(\s*(['"]?)([^)'"\s]+)\1\s*\)/g,(_,q,v)=>{enqueueAsset(v,u);return `url(${q}${publicUrl(v,u)}${q})`;});
     css=css.replace(/@import\s+(['"])([^'"]+)\1/g,(_,q,v)=>{enqueueAsset(v,u);return `@import ${q}${publicUrl(v,u)}${q}`;});buf=Buffer.from(css);
    }
    write(path.join(ROOT,'dist',assetPath(u).slice(1)),buf);console.log('[ASSET]',u.href);

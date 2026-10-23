@@ -7,6 +7,30 @@ const allowed = new Set(config.includeHosts.map(s=>s.toLowerCase()));
 const sleep = ms => new Promise(r=>setTimeout(r,ms));
 function mkdir(file) { fs.mkdirSync(path.dirname(file), {recursive:true}); }
 function write(file, data) { mkdir(file); fs.writeFileSync(file,data); }
+function charsetFromContentType(contentType='') {
+  const match=String(contentType).match(/charset\s*=\s*["']?([^\s;"']+)/i);
+  return match?.[1]||'';
+}
+function charsetFromMarkup(buffer) {
+  // Charset declarations are ASCII, so a latin1 view can inspect them without
+  // first knowing the document encoding. Limit the scan to the document head.
+  const prefix=buffer.subarray(0,4096).toString('latin1');
+  const direct=prefix.match(/<meta\b[^>]*\bcharset\s*=\s*["']?\s*([^\s"'/>;]+)/i);
+  if(direct)return direct[1];
+  const legacy=prefix.match(/<meta\b[^>]*\bcontent\s*=\s*["'][^"']*charset\s*=\s*([^\s;"']+)/i);
+  return legacy?.[1]||'';
+}
+function bomCharset(buffer) {
+  if(buffer.length>=3&&buffer[0]===0xef&&buffer[1]===0xbb&&buffer[2]===0xbf)return 'utf-8';
+  if(buffer.length>=2&&buffer[0]===0xff&&buffer[1]===0xfe)return 'utf-16le';
+  if(buffer.length>=2&&buffer[0]===0xfe&&buffer[1]===0xff)return 'utf-16be';
+  return '';
+}
+function decodeBuffer(buffer,contentType='',inspectMarkup=true) {
+  const charset=bomCharset(buffer)||charsetFromContentType(contentType)||(inspectMarkup?charsetFromMarkup(buffer):'')||'utf-8';
+  try{return new TextDecoder(charset).decode(buffer);}
+  catch{return new TextDecoder('utf-8').decode(buffer);}
+}
 function urlOf(raw, base=config.origin) { try { return new URL(raw,base); } catch {return null;} }
 function isPage(u) {
   if (!u || !/^https?:$/.test(u.protocol) || !allowed.has(u.hostname.toLowerCase())) return false;
@@ -39,4 +63,4 @@ async function get(u) {
   const c=new AbortController(); const timer=setTimeout(()=>c.abort(),config.timeoutMs);
   try {const r=await fetch(u,{signal:c.signal,redirect:'follow',headers:{'user-agent':config.userAgent}});if(!allowed.has(new URL(r.url).hostname.toLowerCase()))throw Error('Redirect outside allowed hosts');if(!r.ok)throw Error('HTTP '+r.status);return r;} finally {clearTimeout(timer);}
 }
-module.exports={ROOT,config,origin,sleep,write,urlOf,isPage,pageKey,pageFile,outputFile,assetPath,publicUrl,get,allowed};
+module.exports={ROOT,config,origin,sleep,write,decodeBuffer,urlOf,isPage,pageKey,pageFile,outputFile,assetPath,publicUrl,get,allowed};
