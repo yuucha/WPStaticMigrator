@@ -115,8 +115,7 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
 
     public async Task InstallNodeAsync()
     {
-        EnsureProject();
-        isInstallingNode = true; Status = "Node.jsを作業フォルダーへインストール中…"; NotifyState();
+        isInstallingNode = true; Status = "Node.jsをアプリ専用領域へインストール中…"; NotifyState();
         try
         {
             var architecture = Environment.Is64BitOperatingSystem ? "x64" : throw new PlatformNotSupportedException("64ビットWindowsのみ対応しています。");
@@ -129,14 +128,12 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
             var fields = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
             var expectedHash = fields[0].ToLowerInvariant();
             var filename = fields[1];
-            var privateRoot = Path.Combine(ProjectPath, ".wpsm");
-            var runtime = Path.Combine(privateRoot, "runtime");
+            var runtime = AppNodeRoot;
             var archive = Path.Combine(runtime, filename);
             var staging = Path.Combine(runtime, "node-new");
             var destination = Path.Combine(runtime, "node");
             Directory.CreateDirectory(runtime);
-            await File.WriteAllTextAsync(Path.Combine(privateRoot, ".gitignore"), "*\r\n");
-            AppendLog("\r\n▶ Node.js 22.23.4以上を .wpsm\\runtime\\node へインストールします\r\n");
+            AppendLog($"\r\n▶ Node.js 22.23.4以上をアプリ専用領域へインストールします\r\n  {destination}\r\n");
             await using (var input = await client.GetStreamAsync(baseUrl + filename))
             await using (var output = File.Create(archive)) await input.CopyToAsync(output);
             await using (var file = File.OpenRead(archive))
@@ -198,7 +195,7 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
     }
     private string FindNode()
     {
-        var local = Path.Combine(ProjectPath, ".wpsm", "runtime", "node", "node.exe");
+        var local = Path.Combine(AppNodeRoot, "node", "node.exe");
         if (File.Exists(local) && NodeIsSupported(local)) return local;
         var system = FindOnPath("node.exe");
         if (system is not null && NodeIsSupported(system)) return system;
@@ -220,6 +217,9 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
         catch { return false; }
     }
     private static string? FindOnPath(string name) => (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator).Select(p => Path.Combine(p.Trim('"'), name)).FirstOrDefault(File.Exists);
+    private static string AppNodeRoot => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "WPStaticMigrator", "node", "v22");
 
     private void LoadConfiguration()
     {
