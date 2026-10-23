@@ -1,13 +1,33 @@
 # Dependencies
 node_modules/
 
-# Generated migration workspaces
+# Swift / Xcode build data
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+
+# Project-local runtime installed by the Mac app
+.wpsm/
+
+# Generated migration workspaces and accidental root workspace output
 /wp-static-output/
 /my-site/
+/tokyo-contact/
+/src/components/
+/src/pages/
+/src/manifest.json
 
 # Generated artifacts
 /dist/
 /logs/
+*.dmg
+*.pkg
+*.zip
+
+# Local handoff material
+/WPStaticMigrator_Codex_Handoff.md
 
 # Local environment and credentials
 .env
