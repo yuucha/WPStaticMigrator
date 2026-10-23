@@ -11,12 +11,12 @@
     "build": "node bin/wp-static-migrator.js build",
     "validate": "node bin/wp-static-migrator.js validate",
     "all": "node bin/wp-static-migrator.js all",
-    "test": "node --test tests/*.test.js",
+    "test": "node --test",
     "preview": "node bin/wp-static-migrator.js preview"
   },
   "dependencies": {
     "cheerio": "1.0.0",
-    "handlebars": "4.7.8"
+    "handlebars": "4.7.10"
   },
   "engines": {
     "node": ">=20"
