@@ -10,19 +10,16 @@ v0.1.0　実験的なMVPです。
 
 ## Mac用アプリ
 
-既存のNode.js版CLIを操作するSwiftUI製macOSアプリを `macos/WPStaticMigratorMac/` に収録しています。開発実行とアプリ作成の手順は [Mac用アプリのREADME](macos/WPStaticMigratorMac/README.md) を参照してください。
+SwiftUI製macOSアプリを `macos/WPStaticMigratorMac/` に収録しています。現在のMacアプリはmacOS 14以降のApple Silicon搭載Macに対応しています。
 
-### ダウンロード
-
-[WP Static Migrator for macOSをダウンロード](https://github.com/yuucha/WPStaticMigrator/releases/latest)
-
-配布版はGitHub Releasesの最新リリースからダウンロードしてください。現在のMacアプリはmacOS 14以降のApple Silicon搭載Macに対応しています。
 
 ## Windows用アプリ
 
-Windows 10/11向けのWPF GUIアプリを `windows/WPStaticMigratorWindows/` に収録しています。Node.js 22.23.4以上がない場合は、PATHやレジストリを変更せず、アプリ専用領域へ対応するNode.jsをインストールできます。詳細は [Windows用アプリのREADME](windows/WPStaticMigratorWindows/README.md) を参照してください。
+Windows 10/11向けのWPF GUIアプリを収録しています。Node.js 22.23.4以上がない場合は、PATHやレジストリを変更せず、アプリ専用領域へ対応するNode.jsをインストールできます。
 
-Windows版の配布ZIPはWindows環境でビルド・コード署名・動作確認後、GitHub Releasesへ追加予定です。
+### ダウンロード
+
+[WP Static Migrator for macOS Windows10/11 をダウンロード](https://github.com/yuucha/WPStaticMigrator/releases/latest)
 
 本番環境へ移行する前に、必ずステージング環境で表示・リンク・機能・SEO設定を確認してください。
 
