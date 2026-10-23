@@ -13,7 +13,10 @@ $Archive = Join-Path $DistDir "WP-Static-Migrator-v$Version-Windows-x64.zip"
 
 Write-Host "Installing production Node.js dependencies..."
 Push-Location $RepositoryRoot
-try { npm ci --omit=dev } finally { Pop-Location }
+try {
+    npm ci --omit=dev
+    if ($LASTEXITCODE -ne 0) { throw "npm ci failed with exit code $LASTEXITCODE" }
+} finally { Pop-Location }
 
 if (Test-Path $RuntimeDir) { Remove-Item $RuntimeDir -Recurse -Force }
 New-Item $RuntimeDir -ItemType Directory | Out-Null
@@ -27,6 +30,11 @@ Write-Host "Publishing self-contained Windows application..."
 dotnet publish (Join-Path $ProjectDir "WPStaticMigratorWindows.csproj") `
     -c Release -r $RuntimeIdentifier --self-contained true `
     -p:PublishSingleFile=false -p:Version=$Version -o $PublishDir
+if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE" }
+
+if (-not (Test-Path (Join-Path $PublishDir "WP Static Migrator.exe"))) {
+    throw "Published application was not found in $PublishDir"
+}
 
 New-Item $DistDir -ItemType Directory -Force | Out-Null
 if (Test-Path $Archive) { Remove-Item $Archive -Force }
