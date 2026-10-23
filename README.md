@@ -20,7 +20,7 @@ v0.1.0　実験的なMVPです。
 
 ## Windows用アプリ
 
-Windows 10/11向けのWPF GUIアプリを `windows/WPStaticMigratorWindows/` に収録しています。Node.jsがない場合は、システム環境を変更せず、選択した作業フォルダー内へNode.js 20をインストールできます。開発・配布ビルド手順は [Windows用アプリのREADME](windows/WPStaticMigratorWindows/README.md) を参照してください。
+Windows 10/11向けのWPF GUIアプリを `windows/WPStaticMigratorWindows/` に収録しています。Node.js 22.23.4以上がない場合は、システム環境を変更せず、選択した作業フォルダー内へ対応するNode.jsをインストールできます。詳細は [Windows用アプリのREADME](windows/WPStaticMigratorWindows/README.md) を参照してください。
 
 Windows版の配布ZIPはWindows環境でビルド・コード署名・動作確認後、GitHub Releasesへ追加予定です。
 

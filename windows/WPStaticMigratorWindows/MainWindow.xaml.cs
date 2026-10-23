@@ -33,7 +33,7 @@ public partial class MainWindow : Window
         catch (NodeNotFoundException)
         {
             var answer = MessageBox.Show(
-                "WP Static Migratorの実行にはNode.js 20以上が必要です。選択中の作業フォルダーへインストールしますか？\n\nシステムのPATHやWindows環境は変更しません。",
+                "WP Static Migratorの実行にはNode.js 22.23.4以上が必要です。選択中の作業フォルダーへインストールしますか？\n\nシステムのPATHやWindows環境は変更しません。",
                 "Node.jsが見つかりません", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (answer == MessageBoxResult.Yes)
             {
@@ -50,7 +50,7 @@ public partial class MainWindow : Window
         catch (NodeNotFoundException)
         {
             var answer = MessageBox.Show(
-                "WP Static Migratorの実行にはNode.js 20以上が必要です。選択中の作業フォルダーへインストールしますか？\n\nシステムのPATHやWindows環境は変更しません。",
+                "WP Static Migratorの実行にはNode.js 22.23.4以上が必要です。選択中の作業フォルダーへインストールしますか？\n\nシステムのPATHやWindows環境は変更しません。",
                 "Node.jsが見つかりません", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (answer == MessageBoxResult.Yes)
             {

@@ -17,7 +17,7 @@ public enum Operation { Initialize, Crawl, Build, Validate, All, Preview }
 
 public sealed class NodeNotFoundException : Exception
 {
-    public NodeNotFoundException() : base("Node.js 20以上が見つかりません。") { }
+    public NodeNotFoundException() : base("Node.js 22.23.4以上が見つかりません。") { }
 }
 
 public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
@@ -120,12 +120,12 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
         try
         {
             var architecture = Environment.Is64BitOperatingSystem ? "x64" : throw new PlatformNotSupportedException("64ビットWindowsのみ対応しています。");
-            const string baseUrl = "https://nodejs.org/dist/latest-v20.x/";
+            const string baseUrl = "https://nodejs.org/dist/latest-v22.x/";
             using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
             var checksums = await client.GetStringAsync(baseUrl + "SHASUMS256.txt");
             var suffix = $"-win-{architecture}.zip";
             var line = checksums.Split('\n').FirstOrDefault(value => value.TrimEnd().EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-                ?? throw new InvalidOperationException("Node.js 20のWindows配布ファイルが見つかりません。");
+                ?? throw new InvalidOperationException("Node.js 22のWindows配布ファイルが見つかりません。");
             var fields = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
             var expectedHash = fields[0].ToLowerInvariant();
             var filename = fields[1];
@@ -136,7 +136,7 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
             var destination = Path.Combine(runtime, "node");
             Directory.CreateDirectory(runtime);
             await File.WriteAllTextAsync(Path.Combine(privateRoot, ".gitignore"), "*\r\n");
-            AppendLog("\r\n▶ Node.js 20を .wpsm\\runtime\\node へインストールします\r\n");
+            AppendLog("\r\n▶ Node.js 22.23.4以上を .wpsm\\runtime\\node へインストールします\r\n");
             await using (var input = await client.GetStreamAsync(baseUrl + filename))
             await using (var output = File.Create(archive)) await input.CopyToAsync(output);
             await using (var file = File.OpenRead(archive))
@@ -206,7 +206,17 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
     }
     private static bool NodeIsSupported(string path)
     {
-        try { using var p = Process.Start(new ProcessStartInfo(path, "--version") { UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true }); return p is not null && int.TryParse(p.StandardOutput.ReadToEnd().Trim().TrimStart('v').Split('.')[0], out var major) && major >= 20; }
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo(path, "--version") { UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true });
+            if (process is null) return false;
+            var parts = process.StandardOutput.ReadToEnd().Trim().TrimStart('v').Split('.');
+            return parts.Length >= 3
+                && int.TryParse(parts[0], out var major)
+                && int.TryParse(parts[1], out var minor)
+                && int.TryParse(parts[2], out var patch)
+                && new Version(major, minor, patch) >= new Version(22, 23, 4);
+        }
         catch { return false; }
     }
     private static string? FindOnPath(string name) => (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator).Select(p => Path.Combine(p.Trim('"'), name)).FirstOrDefault(File.Exists);
@@ -271,8 +281,18 @@ internal static class RuntimeBundle
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "WPStaticMigrator", "runtime", version);
             var cli = Path.Combine(root, "bin", "wp-static-migrator.js");
+            var defaultConfig = Path.Combine(root, "config.json");
+            var defaultLayout = Path.Combine(root, "src", "layouts", "default.html");
             var marker = Path.Combine(root, ".ready");
-            if (File.Exists(marker) && File.Exists(cli))
+
+            using var checksumStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(ResourceName)
+                ?? throw new InvalidOperationException("アプリ内のWP Static Migratorランタイムが見つかりません。");
+            var bundleHash = Convert.ToHexString(SHA256.HashData(checksumStream));
+            if (File.Exists(marker)
+                && File.ReadAllText(marker).Trim() == bundleHash
+                && File.Exists(cli)
+                && File.Exists(defaultConfig)
+                && File.Exists(defaultLayout))
             {
                 extractedPath = root;
                 return root;
@@ -287,12 +307,14 @@ internal static class RuntimeBundle
             using var bundle = Assembly.GetExecutingAssembly().GetManifestResourceStream(ResourceName)
                 ?? throw new InvalidOperationException("アプリ内のWP Static Migratorランタイムが見つかりません。");
             ZipFile.ExtractToDirectory(bundle, staging);
-            if (!File.Exists(Path.Combine(staging, "bin", "wp-static-migrator.js")))
+            if (!File.Exists(Path.Combine(staging, "bin", "wp-static-migrator.js"))
+                || !File.Exists(Path.Combine(staging, "config.json"))
+                || !File.Exists(Path.Combine(staging, "src", "layouts", "default.html")))
                 throw new InvalidDataException("アプリ内ランタイムを正しく展開できませんでした。");
 
             if (Directory.Exists(root)) Directory.Delete(root, true);
             Directory.Move(staging, root);
-            File.WriteAllText(marker, "ready\r\n");
+            File.WriteAllText(marker, bundleHash + "\r\n");
             extractedPath = root;
             return root;
         }

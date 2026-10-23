@@ -25,7 +25,10 @@ Copy-Item (Join-Path $RepositoryRoot "bin") $RuntimeDir -Recurse
 Copy-Item (Join-Path $RepositoryRoot "scripts") $RuntimeDir -Recurse
 Copy-Item (Join-Path $RepositoryRoot "node_modules") $RuntimeDir -Recurse
 Copy-Item (Join-Path $RepositoryRoot "package.json") $RuntimeDir
-Copy-Item (Join-Path $RepositoryRoot "LICENSE") $RuntimeDir -ErrorAction SilentlyContinue
+Copy-Item (Join-Path $RepositoryRoot "config.json") $RuntimeDir
+New-Item (Join-Path $RuntimeDir "src\layouts") -ItemType Directory -Force | Out-Null
+Copy-Item (Join-Path $RepositoryRoot "src\layouts\default.html") (Join-Path $RuntimeDir "src\layouts\default.html")
+Copy-Item (Join-Path $RepositoryRoot "LICENSE.md") $RuntimeDir -ErrorAction SilentlyContinue
 
 if (Test-Path $RuntimeBundle) { Remove-Item $RuntimeBundle -Force }
 Compress-Archive -Path (Join-Path $RuntimeDir "*") -DestinationPath $RuntimeBundle -CompressionLevel Optimal
