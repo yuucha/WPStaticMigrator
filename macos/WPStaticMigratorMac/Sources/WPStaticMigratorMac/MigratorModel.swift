@@ -224,7 +224,7 @@ final class MigratorModel: ObservableObject {
         guard !isInstallingNode else { return }
         isInstallingNode = true
         status = "Node.jsを作業フォルダへインストール中…"
-        appendLog("\n▶︎ Node.js 20を .wpsm/runtime/node へインストールします\n")
+        appendLog("\n▶︎ Node.js 22.23.4以上を .wpsm/runtime/node へインストールします\n")
         Task {
             do {
                 let executable = try await LocalNodeInstaller.install(in: projectURL)
@@ -338,7 +338,7 @@ enum RuntimeLocator {
         var errorDescription: String? {
             switch self {
             case .nodeNotFound:
-                "Node.jsが見つかりません。Node.js 20以上をインストールして、アプリを再起動してください。"
+                "Node.js 22.23.4以上が見つかりません。"
             case .cliNotFound:
                 "WP Static MigratorのCLIが見つかりません。アプリを再ビルドしてください。"
             }
@@ -357,10 +357,39 @@ enum RuntimeLocator {
         ] + (ProcessInfo.processInfo.environment["PATH"] ?? "")
             .split(separator: ":")
             .map { "\($0)/node" }
-        if let path = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) {
+        if let path = candidates.first(where: {
+            FileManager.default.isExecutableFile(atPath: $0) && nodeIsSupported(at: $0)
+        }) {
             return URL(fileURLWithPath: path)
         }
         throw RuntimeError.nodeNotFound
+    }
+
+    static func nodeIsSupported(at path: String) -> Bool {
+        let process = Process()
+        let output = Pipe()
+        process.executableURL = URL(fileURLWithPath: path)
+        process.arguments = ["--version"]
+        process.standardOutput = output
+        process.standardError = FileHandle.nullDevice
+        do {
+            try process.run()
+            process.waitUntilExit()
+            guard process.terminationStatus == 0,
+                  let raw = String(data: output.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) else {
+                return false
+            }
+            let parts = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "v"))
+                .split(separator: ".")
+            guard parts.count >= 3,
+                  let major = Int(parts[0]), let minor = Int(parts[1]), let patch = Int(parts[2]) else {
+                return false
+            }
+            return (major, minor, patch) >= (22, 23, 4)
+        } catch {
+            return false
+        }
     }
 
     static func cliScript() throws -> URL {
@@ -404,7 +433,7 @@ enum LocalNodeInstaller {
             case .unsupportedArchitecture:
                 "このMacのCPUアーキテクチャには対応していません。"
             case .releaseNotFound:
-                "Node.js 20のmacOS向け配布ファイルが見つかりません。"
+                "Node.js 22のmacOS向け配布ファイルが見つかりません。"
             case .checksumMismatch:
                 "ダウンロードしたNode.jsの検証に失敗しました。ファイルは使用していません。"
             case .extractionFailed(let detail):
@@ -423,7 +452,7 @@ enum LocalNodeInstaller {
         throw InstallError.unsupportedArchitecture
         #endif
 
-        let baseURL = URL(string: "https://nodejs.org/dist/latest-v20.x/")!
+        let baseURL = URL(string: "https://nodejs.org/dist/latest-v22.x/")!
         let (checksumData, checksumResponse) = try await URLSession.shared.data(from: baseURL.appendingPathComponent("SHASUMS256.txt"))
         try validateHTTP(checksumResponse)
         guard let checksumList = String(data: checksumData, encoding: .utf8) else {
@@ -487,8 +516,9 @@ enum LocalNodeInstaller {
         try FileManager.default.moveItem(at: staging, to: destination)
         try? FileManager.default.removeItem(at: archive)
         let executable = destination.appendingPathComponent("bin/node")
-        guard FileManager.default.isExecutableFile(atPath: executable.path) else {
-            throw InstallError.extractionFailed("実行ファイルが見つかりません。")
+        guard FileManager.default.isExecutableFile(atPath: executable.path),
+              RuntimeLocator.nodeIsSupported(at: executable.path) else {
+            throw InstallError.extractionFailed("Node.js 22.23.4以上の実行ファイルが見つかりません。")
         }
         return executable
     }

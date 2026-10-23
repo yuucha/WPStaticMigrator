@@ -32,7 +32,7 @@ struct ContentView: View {
             Button("作業フォルダへインストール") { model.installNodeInProject() }
             Button("キャンセル", role: .cancel) { }
         } message: {
-            Text("WP Static Migratorの実行にはNode.js 20以上が必要です。選択中の作業フォルダへインストールしますか？\n\nシステムのPATHやHomebrew環境は変更しません。")
+            Text("WP Static Migratorの実行にはNode.js 22.23.4以上が必要です。選択中の作業フォルダへインストールしますか？\n\nシステムのPATHやHomebrew環境は変更しません。")
         }
     }
 
