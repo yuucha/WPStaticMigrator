@@ -1,3 +1,4 @@
 .build/
-dist/
+dist/*
+!dist/WP-Static-Migrator-v0.1.0-macOS-arm64.zip
 .swiftpm/
