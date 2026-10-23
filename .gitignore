@@ -8,6 +8,13 @@ DerivedData/
 xcuserdata/
 *.xcuserstate
 
+# .NET / Windows app build data
+bin/
+obj/
+publish/
+windows/WPStaticMigratorWindows/Runtime/
+windows/WPStaticMigratorWindows/dist/
+
 # Project-local runtime installed by the Mac app
 .wpsm/
 

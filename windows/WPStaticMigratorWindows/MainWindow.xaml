@@ -1,0 +1,74 @@
+<Window x:Class="WPStaticMigratorWindows.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="WP Static Migrator" Width="1080" Height="720" MinWidth="900" MinHeight="600"
+        Icon="Resources/AppIcon.png" WindowStartupLocation="CenterScreen">
+  <Window.CommandBindings>
+    <CommandBinding Command="ApplicationCommands.Help" Executed="ShowAbout" />
+  </Window.CommandBindings>
+  <Grid>
+    <Grid.ColumnDefinitions><ColumnDefinition Width="390"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+
+    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="24">
+        <TextBlock Text="WP Static Migrator" FontSize="27" FontWeight="Bold" />
+        <TextBlock Text="WordPressサイトを静的HTMLへ移行" Foreground="#707070" FontSize="15" Margin="0,2,0,24" />
+
+        <TextBlock Text="プロジェクト" FontWeight="SemiBold" Foreground="#666" />
+        <TextBlock Text="{Binding ProjectPath}" TextWrapping="Wrap" MinHeight="36" Margin="0,8" />
+        <WrapPanel>
+          <Button Content="フォルダーを選択…" Click="ChooseProject" />
+          <Button Content="エクスプローラーで表示" Click="RevealProject" IsEnabled="{Binding HasProject}" />
+        </WrapPanel>
+
+        <TextBlock Text="新しいサイト" FontWeight="SemiBold" Foreground="#666" Margin="0,22,0,8" />
+        <TextBox Text="{Binding SourceUrl, UpdateSourceTrigger=PropertyChanged}" ToolTip="https://example.com/" />
+        <TextBlock Text="{Binding ConfigurationNotice}" Foreground="{Binding ConfigurationNoticeBrush}" TextWrapping="Wrap" Margin="0,7" />
+        <Button Content="{Binding InitializeButtonTitle}" Click="Initialize" HorizontalAlignment="Left" IsEnabled="{Binding CanInitialize}" />
+
+        <TextBlock Text="変換" FontWeight="SemiBold" Foreground="#666" Margin="0,22,0,8" />
+        <Button Content="1  サイトを取得" Click="Crawl" HorizontalContentAlignment="Left" IsEnabled="{Binding CanRun}" />
+        <Button Content="2  HTMLを生成" Click="Build" HorizontalContentAlignment="Left" IsEnabled="{Binding CanRun}" />
+        <Button Content="3  リンクを検証" Click="Validate" HorizontalContentAlignment="Left" IsEnabled="{Binding CanRun}" />
+        <Separator Margin="0,6" />
+        <Button Content="▶ すべて実行" Click="RunAll" HorizontalContentAlignment="Left" Background="#0A75E8" Foreground="White" IsEnabled="{Binding CanRun}" />
+
+        <TextBlock Text="プレビュー" FontWeight="SemiBold" Foreground="#666" Margin="0,22,0,8" />
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Text="ポート" VerticalAlignment="Center" Margin="0,0,9,0" />
+          <TextBox Text="{Binding Port}" Width="90" />
+        </StackPanel>
+        <WrapPanel Margin="0,7,0,0">
+          <Button Content="{Binding PreviewButtonTitle}" Click="TogglePreview" IsEnabled="{Binding HasProject}" />
+          <Button Content="ブラウザーで開く" Click="OpenPreview" IsEnabled="{Binding PreviewIsRunning}" />
+          <Button Content="このアプリについて" Command="ApplicationCommands.Help" />
+        </WrapPanel>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Grid Grid.Column="1" Background="#FAFAFA">
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+      <DockPanel Margin="18,14">
+        <Button Content="消去" Click="ClearLog" DockPanel.Dock="Right" />
+        <StackPanel>
+          <TextBlock Text="実行ログ" FontWeight="SemiBold" FontSize="16" />
+          <TextBlock Text="{Binding Status}" Foreground="#707070" />
+        </StackPanel>
+      </DockPanel>
+      <TextBox Grid.Row="1" Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+               VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" FontFamily="Consolas"
+               Background="White" BorderThickness="0" Padding="18" />
+    </Grid>
+
+    <Border Grid.ColumnSpan="2" Background="#BFFFFFFF" Visibility="{Binding WorkingVisibility}" Panel.ZIndex="10">
+      <Border HorizontalAlignment="Center" VerticalAlignment="Center" Background="White" CornerRadius="14" Padding="42,32" BorderBrush="#DDD" BorderThickness="1">
+        <StackPanel Width="320">
+          <ProgressBar IsIndeterminate="True" Height="7" Margin="0,0,0,20" />
+          <TextBlock Text="{Binding WorkingTitle}" FontSize="20" FontWeight="SemiBold" TextAlignment="Center" />
+          <TextBlock Text="{Binding Status}" Foreground="#666" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,16" />
+          <Button Content="処理を停止" Click="CancelOperation" Visibility="{Binding CancelVisibility}" />
+        </StackPanel>
+      </Border>
+    </Border>
+  </Grid>
+</Window>

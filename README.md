@@ -18,6 +18,12 @@ WordPressの管理者アカウントやPHPは不要です。実行環境には *
 
 配布版はGitHub Releasesの最新リリースからダウンロードしてください。現在のMacアプリはmacOS 14以降のApple Silicon搭載Macに対応しています。
 
+## Windows用アプリ
+
+Windows 10/11向けのWPF GUIアプリを `windows/WPStaticMigratorWindows/` に収録しています。Node.jsがない場合は、システム環境を変更せず、選択した作業フォルダー内へNode.js 20をインストールできます。開発・配布ビルド手順は [Windows用アプリのREADME](windows/WPStaticMigratorWindows/README.md) を参照してください。
+
+Windows版の配布ZIPはWindows環境でビルド・コード署名・動作確認後、GitHub Releasesへ追加予定です。
+
 本番環境へ移行する前に、必ずステージング環境で表示・リンク・機能・SEO設定を確認してください。
 
 | 分類               | テスト対象                          | 優先度 |

@@ -1,0 +1,14 @@
+<Window x:Class="WPStaticMigratorWindows.AboutWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="WP Static Migratorについて" Width="520" Height="500" ResizeMode="NoResize" WindowStartupLocation="CenterOwner" Icon="Resources/AppIcon.png">
+  <ScrollViewer><StackPanel Margin="30">
+    <Image Source="Resources/AppIcon.png" Width="96" Height="96" HorizontalAlignment="Left" />
+    <TextBlock Text="WP Static Migrator" FontSize="26" FontWeight="Bold" Margin="0,12,0,2" />
+    <TextBlock Text="Version 0.1.0 for Windows" Foreground="#666" Margin="0,0,0,20" />
+    <TextBlock Text="作者：yuucha" Margin="0,4" />
+    <TextBlock Text="ライセンス：MIT" Margin="0,4" />
+    <TextBlock Text="GitHub: https://github.com/yuucha/WPStaticMigrator" Foreground="#0666CC" TextDecorations="Underline" Cursor="Hand" MouseLeftButtonUp="OpenGitHub" Margin="0,4,0,18" />
+    <TextBlock Text="含んでいるオープンソース" FontWeight="SemiBold" FontSize="16" Margin="0,8" />
+    <TextBlock Text="Node.js（MIT）&#x0a;Cheerio（MIT）&#x0a;Handlebars.js（MIT）&#x0a;.NET Runtime（MIT）" LineHeight="24" />
+    <Button Content="閉じる" Click="CloseWindow" HorizontalAlignment="Right" Margin="0,24,0,0" />
+  </StackPanel></ScrollViewer>
+</Window>

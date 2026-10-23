@@ -1,0 +1,44 @@
+name: Build Windows app
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "windows/**"
+      - "bin/**"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/windows-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Test CLI
+        run: npm ci; npm test
+
+      - name: Build Windows distribution
+        shell: powershell
+        run: .\windows\WPStaticMigratorWindows\build-windows.ps1
+
+      - name: Upload Windows ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: WP-Static-Migrator-Windows-x64
+          path: windows/WPStaticMigratorWindows/dist/WP-Static-Migrator-v0.1.0-Windows-x64.zip
+          if-no-files-found: error
