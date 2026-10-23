@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -188,7 +189,7 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
         return info;
     }
 
-    private string RuntimeRoot => Path.Combine(AppContext.BaseDirectory, "Runtime");
+    private static string RuntimeRoot => RuntimeBundle.ExtractIfNeeded();
     private string FindRuntimeFile(params string[] parts)
     {
         var path = RuntimeRoot;
@@ -251,4 +252,49 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
     private void OnPropertyChanged([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     private void NotifyState() { foreach (var name in new[] { nameof(HasProject), nameof(CanRun), nameof(CanInitialize), nameof(InitializeButtonTitle), nameof(ConfigurationNotice), nameof(ConfigurationNoticeBrush), nameof(PreviewIsRunning), nameof(PreviewButtonTitle), nameof(WorkingVisibility), nameof(CancelVisibility), nameof(WorkingTitle) }) OnPropertyChanged(name); }
     public void Dispose() { try { task?.Kill(true); previewTask?.Kill(true); } catch { } task?.Dispose(); previewTask?.Dispose(); }
+}
+
+internal static class RuntimeBundle
+{
+    private const string ResourceName = "WPStaticMigratorWindows.RuntimeBundle.zip";
+    private static readonly object Sync = new();
+    private static string? extractedPath;
+
+    public static string ExtractIfNeeded()
+    {
+        lock (Sync)
+        {
+            if (extractedPath is not null) return extractedPath;
+
+            var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.1.0";
+            var root = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "WPStaticMigrator", "runtime", version);
+            var cli = Path.Combine(root, "bin", "wp-static-migrator.js");
+            var marker = Path.Combine(root, ".ready");
+            if (File.Exists(marker) && File.Exists(cli))
+            {
+                extractedPath = root;
+                return root;
+            }
+
+            var parent = Directory.GetParent(root)?.FullName
+                ?? throw new InvalidOperationException("アプリ専用ランタイムの保存先を作成できません。");
+            var staging = Path.Combine(parent, version + "-new");
+            if (Directory.Exists(staging)) Directory.Delete(staging, true);
+            Directory.CreateDirectory(staging);
+
+            using var bundle = Assembly.GetExecutingAssembly().GetManifestResourceStream(ResourceName)
+                ?? throw new InvalidOperationException("アプリ内のWP Static Migratorランタイムが見つかりません。");
+            ZipFile.ExtractToDirectory(bundle, staging);
+            if (!File.Exists(Path.Combine(staging, "bin", "wp-static-migrator.js")))
+                throw new InvalidDataException("アプリ内ランタイムを正しく展開できませんでした。");
+
+            if (Directory.Exists(root)) Directory.Delete(root, true);
+            Directory.Move(staging, root);
+            File.WriteAllText(marker, "ready\r\n");
+            extractedPath = root;
+            return root;
+        }
+    }
 }

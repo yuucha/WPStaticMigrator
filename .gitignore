@@ -13,6 +13,7 @@ bin/
 obj/
 publish/
 windows/WPStaticMigratorWindows/Runtime/
+windows/WPStaticMigratorWindows/RuntimeBundle.zip
 windows/WPStaticMigratorWindows/dist/
 
 # Project-local runtime installed by the Mac app
