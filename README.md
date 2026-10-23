@@ -1,8 +1,33 @@
-# WP Static Migrator（v0.1.0・実験版）
+# WP Static Migrator（v0.1.0）
 
 **プラグインを追加せずに**、公開されているWordPressサイトを、編集可能なHTMLソースと公開用の静的ファイルへ移行するCLIツールです。**自身が所有・管理するサイト、または移行の許可を得たサイト**にのみ使用してください。
 
 WordPressの管理者アカウントやPHPは不要です。実行環境には **Node.js 20以上**が必要です。
+
+## 開発への参加・ご協力のお願い
+
+WP Static Migratorは、さまざまなWordPressサイトで利用できる汎用ツールを目指しています。バグ修正、機能改善、ドキュメントの改善など、皆さまのご協力を歓迎します。
+
+GitHubでの参加方法は次のとおりです。
+
+1. このリポジトリを **Fork** して、ご自身のGitHubアカウントにコピーします。
+2. Forkしたリポジトリをローカルにクローンし、作業用ブランチを作成します。
+3. 修正・追加を行い、動作を確認してコミットします。
+4. 作業ブランチをFork先にPushし、**元のリポジトリの `main` ブランチ宛てにPull Request（プルリクエスト）** を作成してください。
+
+```bash
+# Fork後、ご自身のリポジトリをクローン
+git clone https://github.com/YOUR_USERNAME/WPStaticMigrator.git
+cd WPStaticMigrator
+git switch -c fix/your-change
+
+# 修正・動作確認後
+git add .
+git commit -m "fix: Describe your change"
+git push -u origin fix/your-change
+```
+
+Pull Requestには、**変更の目的・修正内容・確認した動作**を記載してください。大きな変更を予定している場合は、先にIssueで方針を相談いただけると助かります。
 
 ## はじめての方へ：移行の全体像
 
@@ -93,14 +118,14 @@ Pythonや追加のWebサーバーパッケージは不要です。プレビュ�
 
 ## 生成されるファイル
 
-| パス | 内容 |
-| --- | --- |
-| `my-site/src/components/{header,navigation,footer}.html` | 最初に取得したページから抽出した共通パーツ。編集可能 |
-| `my-site/src/pages/**/index.html` | 各ページ固有のHTML |
-| `my-site/src/layouts/default.html` | Handlebarsによる共通レイアウト |
-| `my-site/src/manifest.json` | ページのメタデータ |
-| `my-site/dist/` | 公開用のHTMLとダウンロードした関連ファイル |
-| `my-site/logs/` | 取得エラー、共通パーツの差異、リンク切れ、WordPress依存の警告 |
+| パス                                                     | 内容                                                          |
+| -------------------------------------------------------- | ------------------------------------------------------------- |
+| `my-site/src/components/{header,navigation,footer}.html` | 最初に取得したページから抽出した共通パーツ。編集可能          |
+| `my-site/src/pages/**/index.html`                        | 各ページ固有のHTML                                            |
+| `my-site/src/layouts/default.html`                       | Handlebarsによる共通レイアウト                                |
+| `my-site/src/manifest.json`                              | ページのメタデータ                                            |
+| `my-site/dist/`                                          | 公開用のHTMLとダウンロードした関連ファイル                    |
+| `my-site/logs/`                                          | 取得エラー、共通パーツの差異、リンク切れ、WordPress依存の警告 |
 
 共通パーツを編集した後は、以下のコマンドでHTMLを再生成できます。
 
@@ -122,15 +147,15 @@ node bin/wp-static-migrator.js build --output ./my-site
 
 ## コマンド一覧
 
-| コマンド | 処理 |
-| --- | --- |
-| `init` | 作業ディレクトリと設定ファイルを初期化 |
-| `crawl` | サイトを巡回し、HTMLと関連ファイルを取得 |
-| `build` | 共通パーツを組み込み、公開用HTMLを生成 |
-| `validate` | 生成したサイトのリンクなどを検証 |
-| `all` | `crawl` → `build` → `validate` を順に実行 |
-| `report` | 取得・検証レポートを表示 |
-| `preview` | Node.js標準機能で `dist/` をローカル配信（`--port` 指定可、既定8080） |
+| コマンド   | 処理                                                                  |
+| ---------- | --------------------------------------------------------------------- |
+| `init`     | 作業ディレクトリと設定ファイルを初期化                                |
+| `crawl`    | サイトを巡回し、HTMLと関連ファイルを取得                              |
+| `build`    | 共通パーツを組み込み、公開用HTMLを生成                                |
+| `validate` | 生成したサイトのリンクなどを検証                                      |
+| `all`      | `crawl` → `build` → `validate` を順に実行                             |
+| `report`   | 取得・検証レポートを表示                                              |
+| `preview`  | Node.js標準機能で `dist/` をローカル配信（`--port` 指定可、既定8080） |
 
 すべてのコマンドで `--output DIRECTORY` を指定できます。`init` には `--url URL` も必要です。
 
@@ -138,15 +163,15 @@ node bin/wp-static-migrator.js build --output ./my-site
 
 `my-site/config.json` を編集します。主な設定項目は次のとおりです。
 
-| 項目 | 内容 |
-| --- | --- |
-| `startPaths` | 巡回を開始するパス |
-| `includeHosts` | 取得対象のホスト名 |
-| `excludePathPrefixes` | 巡回から除外するパスの接頭辞 |
-| `selectors` | ヘッダー・フッターなどのCSSセレクター |
-| `maxPages` | 取得するページ数の上限 |
-| `delayMs` | リクエスト間の待機時間（ミリ秒） |
-| `timeoutMs` | 通信タイムアウト（ミリ秒） |
+| 項目                  | 内容                                  |
+| --------------------- | ------------------------------------- |
+| `startPaths`          | 巡回を開始するパス                    |
+| `includeHosts`        | 取得対象のホスト名                    |
+| `excludePathPrefixes` | 巡回から除外するパスの接頭辞          |
+| `selectors`           | ヘッダー・フッターなどのCSSセレクター |
+| `maxPages`            | 取得するページ数の上限                |
+| `delayMs`             | リクエスト間の待機時間（ミリ秒）      |
+| `timeoutMs`           | 通信タイムアウト（ミリ秒）            |
 
 ## リリース状況
 
