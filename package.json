@@ -1,0 +1,24 @@
+{
+  "name": "wp-static-migrator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plugin-free WordPress-to-static migration CLI",
+  "bin": {
+    "wp-static-migrator": "bin/wp-static-migrator.js"
+  },
+  "scripts": {
+    "crawl": "node bin/wp-static-migrator.js crawl",
+    "build": "node bin/wp-static-migrator.js build",
+    "validate": "node bin/wp-static-migrator.js validate",
+    "all": "node bin/wp-static-migrator.js all",
+    "test": "node --test tests/*.test.js",
+    "preview": "node bin/wp-static-migrator.js preview"
+  },
+  "dependencies": {
+    "cheerio": "1.0.0",
+    "handlebars": "4.7.8"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "origin": "https://example.com",
+  "startPaths": [
+    "/"
+  ],
+  "maxPages": 500,
+  "delayMs": 1000,
+  "timeoutMs": 20000,
+  "userAgent": "WPStaticMigrator/0.1 (authorized site migration)",
+  "includeHosts": [
+    "example.com"
+  ],
+  "excludePathPrefixes": [
+    "/wp-admin/",
+    "/wp-login.php",
+    "/wp-json/",
+    "/xmlrpc.php",
+    "/wp/wp-admin/",
+    "/wp/wp-login.php",
+    "/wp/wp-json/"
+  ],
+  "selectors": {
+    "header": "header",
+    "navigation": "nav",
+    "footer": "footer",
+    "main": "main"
+  }
+}

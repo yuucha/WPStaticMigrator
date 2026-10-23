@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Generated migration workspaces
+/wp-static-output/
+/my-site/
+
+# Generated artifacts
+/dist/
+/logs/
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporary files and logs
+*.log
+npm-debug.log*
+.tmp/
+.cache/
