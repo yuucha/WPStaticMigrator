@@ -63,6 +63,18 @@ public partial class MainWindow : Window
 
     private void OpenPreview(object sender, RoutedEventArgs e) => model.OpenPreview();
     private void ClearLog(object sender, RoutedEventArgs e) => model.Log = "";
+    private void ExportValidationCsv(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SaveFileDialog {
+            Title = "問題箇所のファイル一覧を書き出す",
+            FileName = "validation-issues.csv",
+            DefaultExt = ".csv",
+            Filter = "CSVファイル (*.csv)|*.csv|すべてのファイル (*.*)|*.*"
+        };
+        if (dialog.ShowDialog() != true) return;
+        try { model.ExportValidationCsv(dialog.FileName); }
+        catch (Exception ex) { ShowError(ex); }
+    }
     private void CancelOperation(object sender, RoutedEventArgs e) => model.CancelCurrentOperation();
     private void ShowAbout(object sender, RoutedEventArgs e) => new AboutWindow { Owner = this }.ShowDialog();
     private static void ShowError(Exception ex) => MessageBox.Show(ex.Message, "WP Static Migrator", MessageBoxButton.OK, MessageBoxImage.Error);

@@ -160,6 +160,8 @@ struct ContentView: View {
 
     private var logPanel: some View {
         VStack(spacing: 0) {
+            validationPanel
+            Divider()
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("実行ログ").font(.headline)
@@ -185,6 +187,44 @@ struct ContentView: View {
                 .onChange(of: model.log) { _, _ in proxy.scrollTo("logEnd", anchor: .bottom) }
             }
         }
+    }
+
+    private var validationPanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("HTMLコンテンツの問題").font(.headline)
+                    Text(model.hasValidationReport ? "合計 \(model.validationIssueCount)件" : "検証後に種類別の内訳を表示します")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("CSVを別名で保存…") { model.exportValidationCSV() }
+                    .disabled(!model.hasValidationReport)
+            }
+            if model.validationSummary.isEmpty {
+                if model.hasValidationReport {
+                    Label("問題は見つかりませんでした", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                }
+            } else {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 135), spacing: 8)], alignment: .leading, spacing: 8) {
+                    ForEach(model.validationSummary) { item in
+                        HStack {
+                            Text(item.label).lineLimit(1)
+                            Spacer()
+                            Text("\(item.count)件").fontWeight(.semibold)
+                        }
+                        .font(.callout)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 7))
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 13)
     }
 
     @ViewBuilder

@@ -47,15 +47,38 @@
     </ScrollViewer>
 
     <Grid Grid.Column="1" Background="#FAFAFA">
-      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-      <DockPanel Margin="18,14">
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+      <StackPanel Margin="18,14,18,10">
+        <DockPanel>
+          <Button Content="CSVを別名で保存…" Click="ExportValidationCsv" DockPanel.Dock="Right" IsEnabled="{Binding HasValidationReport}" />
+          <StackPanel>
+            <TextBlock Text="HTMLコンテンツの問題" FontWeight="SemiBold" FontSize="16" />
+            <TextBlock Text="{Binding ValidationReportNotice}" Foreground="#707070" />
+          </StackPanel>
+        </DockPanel>
+        <ItemsControl ItemsSource="{Binding ValidationSummary}" Margin="0,9,0,0">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Background="#F0F0F0" CornerRadius="6" Padding="10,6" Margin="0,0,8,6">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="{Binding Label}" Margin="0,0,12,0" />
+                  <TextBlock Text="{Binding Count, StringFormat={}{0}件}" FontWeight="SemiBold" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+      <Separator Grid.Row="1" />
+      <DockPanel Grid.Row="2" Margin="18,14">
         <Button Content="消去" Click="ClearLog" DockPanel.Dock="Right" />
         <StackPanel>
           <TextBlock Text="実行ログ" FontWeight="SemiBold" FontSize="16" />
           <TextBlock Text="{Binding Status}" Foreground="#707070" />
         </StackPanel>
       </DockPanel>
-      <TextBox Grid.Row="1" Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+      <TextBox Grid.Row="3" Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
                VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" FontFamily="Consolas"
                Background="White" BorderThickness="0" Padding="18" />
     </Grid>

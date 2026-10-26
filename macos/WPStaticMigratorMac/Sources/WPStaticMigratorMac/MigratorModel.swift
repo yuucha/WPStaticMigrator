@@ -1,9 +1,33 @@
 import AppKit
 import CryptoKit
 import Foundation
+import UniformTypeIdentifiers
 
 @MainActor
 final class MigratorModel: ObservableObject {
+    struct ValidationSummary: Codable, Identifiable {
+        let category: String
+        let label: String
+        let count: Int
+        var id: String { category }
+    }
+
+    private struct ValidationIssue: Codable {
+        let page: String
+        let file: String?
+        let category: String
+        let categoryLabel: String
+        let type: String
+        let value: String?
+    }
+
+    private struct ValidationReport: Codable {
+        let pages: Int
+        let issueCount: Int?
+        let summary: [ValidationSummary]?
+        let issues: [ValidationIssue]
+    }
+
     enum Operation: String, CaseIterable, Identifiable {
         case initialize = "初期設定"
         case crawl = "サイト取得"
@@ -34,6 +58,8 @@ final class MigratorModel: ObservableObject {
     @Published var alertMessage: String?
     @Published var showsNodeInstallPrompt = false
     @Published var isInstallingNode = false
+    @Published var validationSummary: [ValidationSummary] = []
+    @Published var validationIssueCount = 0
 
     private var task: Process?
     private var previewTask: Process?
@@ -44,6 +70,11 @@ final class MigratorModel: ObservableObject {
     }
 
     var hasProject: Bool { projectURL != nil }
+    var hasValidationReport: Bool { !validationSummary.isEmpty || validationIssueCount == 0 && validationReportExists }
+    private var validationReportExists: Bool {
+        guard let projectURL else { return false }
+        return FileManager.default.fileExists(atPath: projectURL.appendingPathComponent("logs/validation.json").path)
+    }
     var canInitialize: Bool {
         hasProject && normalizedOrigin(sourceURL) != nil && (configuredOrigin == nil || configurationMismatch)
     }
@@ -63,6 +94,7 @@ final class MigratorModel: ObservableObject {
         if panel.runModal() == .OK, let url = panel.url {
             projectPath = url.path
             loadConfiguration(from: url)
+            loadValidationReport(from: url)
         }
     }
 
@@ -129,6 +161,9 @@ final class MigratorModel: ObservableObject {
                     } else {
                         self.status = "\(operation.rawValue)で問題が見つかりました"
                         self.appendLog("\n⚠︎ 終了コード: \(process.terminationStatus)\n")
+                    }
+                    if operation == .validate || operation == .all, let projectURL = self.projectURL {
+                        self.loadValidationReport(from: projectURL)
                     }
                 }
             }
@@ -241,6 +276,49 @@ final class MigratorModel: ObservableObject {
     }
 
     func clearLog() { log = "" }
+
+    func exportValidationCSV() {
+        guard let projectURL, let report = readValidationReport(from: projectURL) else {
+            alertMessage = "検証結果がありません。先に「3 リンクを検証」を実行してください。"
+            return
+        }
+        let panel = NSSavePanel()
+        panel.title = "問題箇所のファイル一覧を書き出す"
+        panel.nameFieldStringValue = "validation-issues.csv"
+        panel.allowedContentTypes = [.commaSeparatedText]
+        guard panel.runModal() == .OK, let destination = panel.url else { return }
+        let header = ["種類", "対象HTMLファイル", "ページURL", "問題", "参照先"]
+        let rows = report.issues.map { issue in
+            [issue.categoryLabel, issue.file ?? "", issue.page, issue.type, issue.value ?? ""]
+        }
+        let csv = ([header] + rows).map { $0.map(csvField).joined(separator: ",") }.joined(separator: "\r\n") + "\r\n"
+        do {
+            try ("\u{FEFF}" + csv).write(to: destination, atomically: true, encoding: .utf8)
+            status = "CSVを書き出しました: \(destination.lastPathComponent)"
+        } catch {
+            handle(error)
+        }
+    }
+
+    private func csvField(_ value: String) -> String {
+        "\"\(value.replacingOccurrences(of: "\"", with: "\"\""))\""
+    }
+
+    private func readValidationReport(from projectURL: URL) -> ValidationReport? {
+        let url = projectURL.appendingPathComponent("logs/validation.json")
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(ValidationReport.self, from: data)
+    }
+
+    private func loadValidationReport(from projectURL: URL) {
+        guard let report = readValidationReport(from: projectURL) else {
+            validationSummary = []
+            validationIssueCount = 0
+            return
+        }
+        validationIssueCount = report.issueCount ?? report.issues.count
+        validationSummary = report.summary ?? []
+    }
 
     private func loadConfiguration(from projectURL: URL) {
         let configURL = projectURL.appendingPathComponent("config.json")

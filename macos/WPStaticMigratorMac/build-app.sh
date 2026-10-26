@@ -43,10 +43,10 @@ if [[ -z "$SIGNING_IDENTITY" ]]; then
 fi
 
 if [[ -n "$SIGNING_IDENTITY" ]]; then
-  codesign --force --sign "$SIGNING_IDENTITY" --options runtime --timestamp "$APP"
+  codesign --force --deep --sign "$SIGNING_IDENTITY" --options runtime --timestamp "$APP"
   echo "Signed with: $SIGNING_IDENTITY"
 else
-  codesign --force --sign - "$APP"
+  codesign --force --deep --sign - "$APP"
   echo "Warning: Developer ID Application certificate not found; used ad-hoc signing." >&2
 fi
 echo "Built: $APP"

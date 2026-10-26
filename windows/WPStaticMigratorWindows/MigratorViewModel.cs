@@ -6,8 +6,10 @@ using System.Net.Http;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Windows;
 using System.Windows.Media;
 
@@ -22,6 +24,27 @@ public sealed class NodeNotFoundException : Exception
 
 public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
 {
+    public sealed class ValidationSummaryItem
+    {
+        [JsonPropertyName("category")] public string Category { get; set; } = "";
+        [JsonPropertyName("label")] public string Label { get; set; } = "";
+        [JsonPropertyName("count")] public int Count { get; set; }
+    }
+    private sealed class ValidationIssue
+    {
+        [JsonPropertyName("page")] public string Page { get; set; } = "";
+        [JsonPropertyName("file")] public string File { get; set; } = "";
+        [JsonPropertyName("categoryLabel")] public string CategoryLabel { get; set; } = "";
+        [JsonPropertyName("type")] public string Type { get; set; } = "";
+        [JsonPropertyName("value")] public string Value { get; set; } = "";
+    }
+    private sealed class ValidationReport
+    {
+        [JsonPropertyName("issueCount")] public int? IssueCount { get; set; }
+        [JsonPropertyName("summary")] public List<ValidationSummaryItem> Summary { get; set; } = [];
+        [JsonPropertyName("issues")] public List<ValidationIssue> Issues { get; set; } = [];
+    }
+
     private string projectPath = "作業フォルダーが未選択です";
     private string sourceUrl = "";
     private string? configuredOrigin;
@@ -33,6 +56,7 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
     private bool previewIsRunning;
     private Process? task;
     private Process? previewTask;
+    private ValidationReport? validationReport;
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public string ProjectPath { get => projectPath; private set => Set(ref projectPath, value); }
@@ -54,11 +78,16 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
         ? "空の作業フォルダーを選び、取得するサイトのURLを入力してください。"
         : CanInitialize ? "実行時に設定URLをこの入力内容へ更新します" : $"設定済み: {configuredOrigin}";
     public Brush ConfigurationNoticeBrush => CanInitialize ? Brushes.DodgerBlue : configuredOrigin is null ? Brushes.DimGray : Brushes.ForestGreen;
+    public IReadOnlyList<ValidationSummaryItem> ValidationSummary => validationReport?.Summary ?? [];
+    public int ValidationIssueCount => validationReport?.IssueCount ?? validationReport?.Issues.Count ?? 0;
+    public bool HasValidationReport => validationReport is not null;
+    public string ValidationReportNotice => HasValidationReport ? $"合計 {ValidationIssueCount}件" : "検証後に種類別の内訳を表示します";
 
     public void SelectProject(string path)
     {
         ProjectPath = path;
         LoadConfiguration();
+        LoadValidationReport();
         NotifyState();
     }
 
@@ -90,6 +119,7 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
         args.AddRange(["--output", ProjectPath]);
         await RunProcessAsync(node, args, operation switch { Operation.Initialize => "初期設定", Operation.Crawl => "サイト取得", Operation.Build => "HTML生成", Operation.Validate => "検証", _ => "すべて実行" });
         if (operation == Operation.Initialize) LoadConfiguration();
+        if (operation is Operation.Validate or Operation.All) LoadValidationReport();
     }
 
     public async Task TogglePreviewAsync()
@@ -253,6 +283,31 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
         configuredOrigin = origin; SourceUrl = origin; Status = $"設定URLを {origin} に更新しました"; AppendLog($"\r\n✓ 設定URLを更新: {origin}\r\n"); NotifyState();
     }
 
+    private void LoadValidationReport()
+    {
+        try
+        {
+            var reportPath = Path.Combine(ProjectPath, "logs", "validation.json");
+            validationReport = File.Exists(reportPath)
+                ? JsonSerializer.Deserialize<ValidationReport>(File.ReadAllText(reportPath))
+                : null;
+        }
+        catch { validationReport = null; }
+        NotifyState();
+    }
+
+    public void ExportValidationCsv(string destination)
+    {
+        if (validationReport is null) throw new InvalidOperationException("検証結果がありません。先に「3 リンクを検証」を実行してください。");
+        static string Csv(string value) => $"\"{value.Replace("\"", "\"\"")}\"";
+        var lines = new List<string> { "\"種類\",\"対象HTMLファイル\",\"ページURL\",\"問題\",\"参照先\"" };
+        lines.AddRange(validationReport.Issues.Select(issue => string.Join(",", new[] {
+            Csv(issue.CategoryLabel), Csv(issue.File), Csv(issue.Page), Csv(issue.Type), Csv(issue.Value)
+        })));
+        File.WriteAllText(destination, string.Join("\r\n", lines) + "\r\n", new UTF8Encoding(true));
+        Status = $"CSVを書き出しました: {Path.GetFileName(destination)}";
+    }
+
     private static string? NormalizeOrigin(string value)
     {
         if (!Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri) || (uri.Scheme != "http" && uri.Scheme != "https") || string.IsNullOrWhiteSpace(uri.Host)) return null;
@@ -266,7 +321,7 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
     private void AppendLog(string value) => Log += value;
     private bool Set<T>(ref T field, T value, [CallerMemberName] string? name = null) { if (EqualityComparer<T>.Default.Equals(field, value)) return false; field = value; OnPropertyChanged(name); return true; }
     private void OnPropertyChanged([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-    private void NotifyState() { foreach (var name in new[] { nameof(HasProject), nameof(CanRun), nameof(CanInitialize), nameof(InitializeButtonTitle), nameof(ConfigurationNotice), nameof(ConfigurationNoticeBrush), nameof(PreviewIsRunning), nameof(PreviewButtonTitle), nameof(WorkingVisibility), nameof(CancelVisibility), nameof(WorkingTitle) }) OnPropertyChanged(name); }
+    private void NotifyState() { foreach (var name in new[] { nameof(HasProject), nameof(CanRun), nameof(CanInitialize), nameof(InitializeButtonTitle), nameof(ConfigurationNotice), nameof(ConfigurationNoticeBrush), nameof(PreviewIsRunning), nameof(PreviewButtonTitle), nameof(WorkingVisibility), nameof(CancelVisibility), nameof(WorkingTitle), nameof(ValidationSummary), nameof(ValidationIssueCount), nameof(HasValidationReport), nameof(ValidationReportNotice) }) OnPropertyChanged(name); }
     public void Dispose() { try { task?.Kill(true); previewTask?.Kill(true); } catch { } task?.Dispose(); previewTask?.Dispose(); }
 }
 
