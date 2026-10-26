@@ -63,6 +63,7 @@ public partial class MainWindow : Window
 
     private void OpenPreview(object sender, RoutedEventArgs e) => model.OpenPreview();
     private void ClearLog(object sender, RoutedEventArgs e) => model.Log = "";
+    private void LogTextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e) => LogTextBox.ScrollToEnd();
     private void ExportValidationCsv(object sender, RoutedEventArgs e)
     {
         var dialog = new SaveFileDialog {

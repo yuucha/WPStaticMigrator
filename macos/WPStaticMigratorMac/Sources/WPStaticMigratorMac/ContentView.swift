@@ -54,6 +54,15 @@ struct ContentView: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
+                    if !model.currentURL.isEmpty {
+                        Text(model.currentURL)
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(3)
+                            .multilineTextAlignment(.center)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: 460)
+                    }
                 }
 
                 if model.isRunning {
@@ -184,7 +193,11 @@ struct ContentView: View {
                     Color.clear.frame(height: 1).id("logEnd")
                 }
                 .background(Color(nsColor: .textBackgroundColor))
-                .onChange(of: model.log) { _, _ in proxy.scrollTo("logEnd", anchor: .bottom) }
+                .onChange(of: model.log) { _, _ in
+                    DispatchQueue.main.async {
+                        proxy.scrollTo("logEnd", anchor: .bottom)
+                    }
+                }
             }
         }
     }

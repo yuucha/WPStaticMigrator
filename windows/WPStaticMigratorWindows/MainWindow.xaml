@@ -78,7 +78,7 @@
           <TextBlock Text="{Binding Status}" Foreground="#707070" />
         </StackPanel>
       </DockPanel>
-      <TextBox Grid.Row="3" Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+      <TextBox x:Name="LogTextBox" Grid.Row="3" Text="{Binding Log}" TextChanged="LogTextChanged" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
                VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" FontFamily="Consolas"
                Background="White" BorderThickness="0" Padding="18" />
     </Grid>
@@ -89,6 +89,8 @@
           <ProgressBar IsIndeterminate="True" Height="7" Margin="0,0,0,20" />
           <TextBlock Text="{Binding WorkingTitle}" FontSize="20" FontWeight="SemiBold" TextAlignment="Center" />
           <TextBlock Text="{Binding Status}" Foreground="#666" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,16" />
+          <TextBlock Text="{Binding CurrentUrl}" Foreground="#666" FontFamily="Consolas" FontSize="12"
+                     TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,16" MaxWidth="440" />
           <Button Content="処理を停止" Click="CancelOperation" Visibility="{Binding CancelVisibility}" />
         </StackPanel>
       </Border>

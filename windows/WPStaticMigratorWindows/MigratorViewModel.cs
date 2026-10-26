@@ -51,6 +51,7 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
     private string port = "8080";
     private string log = "Windows用 WP Static Migrator を起動しました。\r\n";
     private string status = "準備完了";
+    private string currentUrl = "";
     private bool isRunning;
     private bool isInstallingNode;
     private bool previewIsRunning;
@@ -64,6 +65,7 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
     public string Port { get => port; set => Set(ref port, value); }
     public string Log { get => log; set => Set(ref log, value); }
     public string Status { get => status; private set => Set(ref status, value); }
+    public string CurrentUrl { get => currentUrl; private set => Set(ref currentUrl, value); }
     public bool HasProject => Directory.Exists(ProjectPath);
     public bool IsWorking => isRunning || isInstallingNode;
     public bool PreviewIsRunning => previewIsRunning;
@@ -194,7 +196,7 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
     private async Task RunProcessAsync(string executable, IReadOnlyList<string> args, string title)
     {
         if (isRunning) return;
-        AppendLog($"\r\n▶ {title}\r\n"); Status = $"{title}を実行中…"; isRunning = true; NotifyState();
+        AppendLog($"\r\n▶ {title}\r\n"); Status = $"{title}を実行中…"; CurrentUrl = ""; isRunning = true; NotifyState();
         try
         {
             task = StartAttachedProcess(CreateStartInfo(executable, args), "");
@@ -203,16 +205,26 @@ public sealed class MigratorViewModel : INotifyPropertyChanged, IDisposable
             if (exitCode == 0) { Status = $"{title}が完了しました"; AppendLog($"\r\n✓ {title} 完了\r\n"); }
             else { Status = $"{title}で問題が見つかりました"; AppendLog($"\r\n⚠ 終了コード: {exitCode}\r\n"); }
         }
-        finally { task?.Dispose(); task = null; isRunning = false; NotifyState(); }
+        finally { task?.Dispose(); task = null; CurrentUrl = ""; isRunning = false; NotifyState(); }
     }
 
     private Process StartAttachedProcess(ProcessStartInfo info, string prefix)
     {
         var process = new Process { StartInfo = info };
-        process.OutputDataReceived += (_, e) => { if (e.Data is not null) Application.Current.Dispatcher.Invoke(() => AppendLog(prefix + e.Data + "\r\n")); };
-        process.ErrorDataReceived += (_, e) => { if (e.Data is not null) Application.Current.Dispatcher.Invoke(() => AppendLog(prefix + e.Data + "\r\n")); };
+        process.OutputDataReceived += (_, e) => { if (e.Data is not null) Application.Current.Dispatcher.Invoke(() => { UpdateCurrentUrl(e.Data); AppendLog(prefix + e.Data + "\r\n"); }); };
+        process.ErrorDataReceived += (_, e) => { if (e.Data is not null) Application.Current.Dispatcher.Invoke(() => { UpdateCurrentUrl(e.Data); AppendLog(prefix + e.Data + "\r\n"); }); };
         process.Start(); process.BeginOutputReadLine(); process.BeginErrorReadLine();
         return process;
+    }
+
+    private void UpdateCurrentUrl(string line)
+    {
+        if (!(line.StartsWith("[PAGE ") || line.StartsWith("[ASSET]") || line.StartsWith("[ERROR]") || line.StartsWith("[ASSET ERROR]"))) return;
+        var closingBracket = line.IndexOf(']');
+        if (closingBracket < 0) return;
+        var value = line[(closingBracket + 1)..].TrimStart().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        if (value?.StartsWith("http://", StringComparison.OrdinalIgnoreCase) == true || value?.StartsWith("https://", StringComparison.OrdinalIgnoreCase) == true)
+            CurrentUrl = value;
     }
 
     private ProcessStartInfo CreateStartInfo(string executable, IReadOnlyList<string> args)

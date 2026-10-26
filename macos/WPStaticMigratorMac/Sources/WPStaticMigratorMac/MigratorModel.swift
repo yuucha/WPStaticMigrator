@@ -58,6 +58,7 @@ final class MigratorModel: ObservableObject {
     @Published var alertMessage: String?
     @Published var showsNodeInstallPrompt = false
     @Published var isInstallingNode = false
+    @Published var currentURL = ""
     @Published var validationSummary: [ValidationSummary] = []
     @Published var validationIssueCount = 0
 
@@ -152,6 +153,7 @@ final class MigratorModel: ObservableObject {
                     guard let self else { return }
                     self.isRunning = false
                     self.task = nil
+                    self.currentURL = ""
                     if process.terminationStatus == 0 {
                         self.status = "\(operation.rawValue)が完了しました"
                         self.appendLog("\n✓ \(operation.rawValue) 完了\n")
@@ -170,6 +172,7 @@ final class MigratorModel: ObservableObject {
 
             appendLog("\n▶︎ \(operation.rawValue)\n")
             status = "\(operation.rawValue)を実行中…"
+            currentURL = ""
             isRunning = true
             task = process
             try process.run()
@@ -378,7 +381,24 @@ final class MigratorModel: ObservableObject {
         pipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
             let data = handle.availableData
             guard !data.isEmpty, let text = String(data: data, encoding: .utf8) else { return }
-            Task { @MainActor in self?.appendLog(prefix + text) }
+            Task { @MainActor in
+                self?.updateCurrentURL(from: text)
+                self?.appendLog(prefix + text)
+            }
+        }
+    }
+
+    private func updateCurrentURL(from output: String) {
+        for line in output.split(whereSeparator: { $0.isNewline }).reversed() {
+            let text = String(line)
+            guard text.hasPrefix("[PAGE ") || text.hasPrefix("[ASSET]") || text.hasPrefix("[ERROR]") || text.hasPrefix("[ASSET ERROR]") else { continue }
+            guard let closingBracket = text.firstIndex(of: "]") else { continue }
+            let remainder = text[text.index(after: closingBracket)...].trimmingCharacters(in: .whitespaces)
+            if let value = remainder.split(whereSeparator: { $0.isWhitespace }).first,
+               value.hasPrefix("http://") || value.hasPrefix("https://") {
+                currentURL = String(value)
+                return
+            }
         }
     }
 
